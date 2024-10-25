@@ -1334,6 +1334,28 @@ public:
     /**
      * Overload of connect for lifetime object tracking and automatic disconnection
      *
+     * Ptr must be derived from observer.
+     *
+     * @param c a callable
+     * @param ptr an object pointer derived from observer
+     * @param gid an identifier that can be used to order slot execution
+     * @return a connection object that can be used to interact with the slot
+     */
+    template <typename Callable, typename Ptr>
+    std::enable_if_t<trait::is_callable_v<arg_list, Callable> &&
+                     trait::is_observer_v<Ptr>, connection>
+    connect(Callable && c, Ptr && ptr, group_id gid = 0) {
+        using slot_t = detail::slot<Callable, T...>;
+        auto s = make_slot<slot_t>(std::forward<Callable>(c), gid);
+        connection conn(s);
+        add_slot(std::move(s));
+        ptr->add_connection(conn);
+        return conn;
+    }
+
+    /**
+     * Overload of connect for lifetime object tracking and automatic disconnection
+     *
      * Ptr must be convertible to an object following a loose form of weak pointer
      * concept, by implementing the ADL-detected conversion function to_weak().
      *
